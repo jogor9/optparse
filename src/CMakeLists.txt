@@ -1,3 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
 project(optparse)
+set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic")
+set(CMAKE_C_FLAGS_DEBUG "-g3 -Og -fsanitize=address,leak,undefined")
 add_library(optparse optparse.h optparse.c)
