@@ -23,9 +23,9 @@ static void make_optstr(
         struct option *q = long_opts;
         char *r = short_opts;
 
-        if (order == OPT_PARSE_STRICT)
+        if (order == OPT_PARSE_ORDER_STRICT)
                 *r++ = '+';
-        else if (order == OPT_PARSE_WRAP)
+        else if (order == OPT_PARSE_ORDER_WRAP)
                 *r++ = '-';
 
         *r++ = ':';
@@ -36,13 +36,13 @@ static void make_optstr(
                 if (p->name) {
                         q->name = p->name;
                         switch (p->arg_type) {
-                        case OPT_PARSE_NONE:
+                        case OPT_PARSE_ARG_NONE:
                                 q->has_arg = no_argument;
                                 break;
-                        case OPT_PARSE_REQUIRED:
+                        case OPT_PARSE_ARG_REQUIRED:
                                 q->has_arg = required_argument;
                                 break;
-                        case OPT_PARSE_OPTIONAL:
+                        case OPT_PARSE_ARG_OPTIONAL:
                                 q->has_arg = optional_argument;
                                 break;
                         }
@@ -54,9 +54,9 @@ static void make_optstr(
                 if (!isgraph(p->val) || strchr(":;-?", p->val))
                         continue;
                 *r++ = p->val;
-                if (p->arg_type != OPT_PARSE_NONE)
+                if (p->arg_type != OPT_PARSE_ARG_NONE)
                         *r++ = ':';
-                if (p->arg_type == OPT_PARSE_OPTIONAL)
+                if (p->arg_type == OPT_PARSE_ARG_OPTIONAL)
                         *r++ = ':';
         }
 
@@ -80,11 +80,12 @@ void opt_parse_print_help(
                    + (isgraph(p->val) != 0) * 2 // short opt
                    + (isgraph(p->val) != 0 && p->name) * 2 // comma if both opts
                    + (p->name ? 2 + strlen(p->name) : 0) // long opt
-                   + (p->arg_name ? 1 + strlen(p->arg_name)
-                                            + 2
-                                                      * (p->arg_type
-                                                         == OPT_PARSE_OPTIONAL)
-                                  : 0) // argument
+                   + (p->arg_name
+                              ? 1 + strlen(p->arg_name)
+                                        + 2
+                                                  * (p->arg_type
+                                                     == OPT_PARSE_ARG_OPTIONAL)
+                              : 0) // argument
                    + 1; // trailing space
                 max_len = max(max_len, sz);
         }
@@ -97,21 +98,22 @@ void opt_parse_print_help(
                         indent += fprintf(f, ", ");
                 if (p->name)
                         indent += fprintf(f, "--%s", p->name);
-                if (p->arg_name || (p->name && p->arg_type != OPT_PARSE_NONE)) {
+                if (p->arg_name
+                    || (p->name && p->arg_type != OPT_PARSE_ARG_NONE)) {
                         s = p->arg_name;
                         if (!s) {
                                 indent += fprintf(f, "=");
-                                if (p->arg_type == OPT_PARSE_OPTIONAL)
+                                if (p->arg_type == OPT_PARSE_ARG_OPTIONAL)
                                         indent += fprintf(f, "[");
                                 for (s = p->name; *s; ++s) {
                                         fprintf(f, "%c", toupper(*s));
                                 }
-                                if (p->arg_type == OPT_PARSE_OPTIONAL)
+                                if (p->arg_type == OPT_PARSE_ARG_OPTIONAL)
                                         indent += fprintf(f, "]");
                         } else {
                                 indent += fprintf(
                                         f,
-                                        p->arg_type == OPT_PARSE_OPTIONAL
+                                        p->arg_type == OPT_PARSE_ARG_OPTIONAL
                                                 ? "=[%s]"
                                                 : "=%s",
                                         s);
@@ -152,7 +154,7 @@ size_t opt_parse_struct_option_size(size_t nmemb)
         return nmemb * sizeof(struct option);
 }
 
-enum OptParse opt_parse_static(
+enum OptParseErr opt_parse_static(
         enum OptParseOrder order,
         size_t n,
         struct OptSpec opts_spec[OPT_PARSE_ARRAY OPT_PARSE_RESTRICT n],
@@ -177,21 +179,21 @@ enum OptParse opt_parse_static(
                 p = bsearch(&spec, opts_spec, n, sizeof(*opts_spec), opt_cmp);
                 if (!p) {
                         if (spec.val == ':')
-                                return OPT_PARSE_REQUIRES_ARG;
-                        return OPT_PARSE_UNRECOGNIZED;
+                                return OPT_PARSE_ERR_REQUIRES_ARG;
+                        return OPT_PARSE_ERR_UNRECOGNIZED;
                 }
                 if (spec.val == '?' || spec.val == ':')
                         arg = argv[optind - 1];
                 else
                         arg = optarg;
                 if (!p->proc(spec.val, arg, user))
-                        return OPT_PARSE_PROC_FAILURE;
+                        return OPT_PARSE_ERR_PROC_FAILURE;
         }
 
-        return OPT_PARSE_SUCCESS;
+        return OPT_PARSE_ERR_SUCCESS;
 }
 
-enum OptParse opt_parse(
+enum OptParseErr opt_parse(
         enum OptParseOrder order,
         size_t n,
         struct OptSpec spec[OPT_PARSE_ARRAY OPT_PARSE_RESTRICT n],
@@ -201,7 +203,7 @@ enum OptParse opt_parse(
 {
         char *optstr = NULL;
         struct option *longs = NULL;
-        enum OptParse status = OPT_PARSE_OUT_OF_MEMORY;
+        enum OptParseErr status = OPT_PARSE_ERR_OUT_OF_MEMORY;
 
         optstr = malloc((3 * n + 3) * sizeof(*optstr));
         longs = malloc((n + 1) * sizeof(*longs));

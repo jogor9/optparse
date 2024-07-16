@@ -22,9 +22,9 @@ typedef int OptProc(int val,
                     void *OPT_PARSE_RESTRICT user);
 
 enum OptParseArg {
-        OPT_PARSE_NONE,
-        OPT_PARSE_REQUIRED,
-        OPT_PARSE_OPTIONAL,
+        OPT_PARSE_ARG_NONE,
+        OPT_PARSE_ARG_REQUIRED,
+        OPT_PARSE_ARG_OPTIONAL,
 };
 
 struct OptSpec {
@@ -37,22 +37,22 @@ struct OptSpec {
 };
 
 enum OptParseOrder {
-        OPT_PARSE_PERMUTE,
-        OPT_PARSE_STRICT,
-        OPT_PARSE_WRAP
+        OPT_PARSE_ORDER_PERMUTE,
+        OPT_PARSE_ORDER_STRICT,
+        OPT_PARSE_ORDER_WRAP
 };
 
-enum OptParse {
-        OPT_PARSE_SUCCESS,
-        OPT_PARSE_UNRECOGNIZED,
-        OPT_PARSE_REQUIRES_ARG,
-        OPT_PARSE_PROC_FAILURE,
-        OPT_PARSE_OUT_OF_MEMORY,
+enum OptParseErr {
+        OPT_PARSE_ERR_SUCCESS,
+        OPT_PARSE_ERR_UNRECOGNIZED,
+        OPT_PARSE_ERR_REQUIRES_ARG,
+        OPT_PARSE_ERR_PROC_FAILURE,
+        OPT_PARSE_ERR_OUT_OF_MEMORY,
 };
 
 size_t opt_parse_longopts_struct_size(size_t nmemb);
 
-enum OptParse opt_parse_static(
+enum OptParseErr opt_parse_static(
         enum OptParseOrder order,
         size_t n,
         struct OptSpec opts_spec[OPT_PARSE_ARRAY OPT_PARSE_RESTRICT n],
@@ -62,7 +62,7 @@ enum OptParse opt_parse_static(
         char *argv[OPT_PARSE_ARRAY argc + 1],
         void *OPT_PARSE_RESTRICT user);
 
-enum OptParse opt_parse(
+enum OptParseErr opt_parse(
         enum OptParseOrder order,
         size_t n,
         struct OptSpec opts_spec[OPT_PARSE_ARRAY OPT_PARSE_RESTRICT n],
