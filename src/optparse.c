@@ -12,6 +12,11 @@
 #define compare(a, b) (((b) > (a)) - ((a) > (b)))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
+static int special_option(int val)
+{
+        return !isgraph(val) || strchr(":;-?", val);
+}
+
 static void make_optstr(
         enum OptParseOrder order,
         size_t n,
@@ -51,7 +56,7 @@ static void make_optstr(
                         ++q;
                 }
 
-                if (!isgraph(p->val) || strchr(":;-?", p->val))
+                if (special_option(p->val))
                         continue;
                 *r++ = p->val;
                 if (p->arg_type != OPT_PARSE_ARG_NONE)
@@ -92,9 +97,9 @@ void opt_parse_print_help(
 
         for (; p < specs + specs_sz; ++p) {
                 indent = fprintf(f, "        ");
-                if (isgraph(p->val))
+                if (!special_option(p->val))
                         indent += fprintf(f, "-%c", p->val);
-                if (isgraph(p->val) && p->name)
+                if (!special_option(p->val) && p->name)
                         indent += fprintf(f, ", ");
                 if (p->name)
                         indent += fprintf(f, "--%s", p->name);
@@ -166,9 +171,10 @@ enum OptParseErr opt_parse_static(
 {
         struct OptSpec spec = { 0 }, *p;
         struct option *longopts = l;
-        char *arg;
+        char unrec[2] = { 0 }, *arg;
 
         optind = 0;
+        optopt = 0;
 
         qsort(opts_spec, n, sizeof(*opts_spec), opt_cmp);
 
@@ -182,10 +188,16 @@ enum OptParseErr opt_parse_static(
                                 return OPT_PARSE_ERR_REQUIRES_ARG;
                         return OPT_PARSE_ERR_UNRECOGNIZED;
                 }
-                if (spec.val == '?' || spec.val == ':')
-                        arg = argv[optind - 1];
-                else
-                        arg = optarg;
+                arg = optarg;
+                if (spec.val == '?' || spec.val == ':') {
+                        if (isgraph(optopt)) {
+                                unrec[0] = optopt;
+                                optopt = 0;
+                                arg = unrec;
+                        } else {
+                                arg = argv[optind - 1];
+                        }
+                }
                 if (!p->proc(spec.val, arg, user))
                         return OPT_PARSE_ERR_PROC_FAILURE;
         }
