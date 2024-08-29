@@ -75,12 +75,12 @@ void opt_parse_print_help(
         struct OptSpec specs[OPT_PARSE_ARRAY OPT_PARSE_RESTRICT specs_sz])
 {
         const char *s, *b;
-        struct OptSpec *p = specs;
+        struct OptSpec *p;
         ptrdiff_t sz, max_len = 0, indent;
 
         fprintf(f, "usage: wallset [options...] [wallpapers...]\n\n");
 
-        for (; p < specs + specs_sz; ++p) {
+        for (p = specs; p < specs + specs_sz; ++p) {
                 sz = 8 // iniital indent
                    + (isgraph(p->val) != 0) * 2 // short opt
                    + (isgraph(p->val) != 0 && p->name) * 2 // comma if both opts
@@ -90,12 +90,14 @@ void opt_parse_print_help(
                                         + 2
                                                   * (p->arg_type
                                                      == OPT_PARSE_ARG_OPTIONAL)
+                      : (p->name && p->arg_type != OPT_PARSE_ARG_NONE)
+                              ? 1 + strlen(p->name)
                               : 0) // argument
                    + 1; // trailing space
                 max_len = max(max_len, sz);
         }
 
-        for (; p < specs + specs_sz; ++p) {
+        for (p = specs; p < specs + specs_sz; ++p) {
                 indent = fprintf(f, "        ");
                 if (!special_option(p->val))
                         indent += fprintf(f, "-%c", p->val);
@@ -111,7 +113,7 @@ void opt_parse_print_help(
                                 if (p->arg_type == OPT_PARSE_ARG_OPTIONAL)
                                         indent += fprintf(f, "[");
                                 for (s = p->name; *s; ++s) {
-                                        fprintf(f, "%c", toupper(*s));
+                                        indent += fprintf(f, "%c", toupper(*s));
                                 }
                                 if (p->arg_type == OPT_PARSE_ARG_OPTIONAL)
                                         indent += fprintf(f, "]");
@@ -124,18 +126,17 @@ void opt_parse_print_help(
                                         s);
                         }
                 }
-                for (; indent != max_len; ++indent)
+                for (; indent < max_len; ++indent)
                         fprintf(f, " ");
                 s = p->desc;
                 while (s && *s) {
                         do {
                                 b = s;
-                                for (; *s && *s != ' '; ++s)
-                                        ++indent;
-                                fprintf(f, "%.*s ", (int)(s - b), b);
+                                while (*s && *s != ' ')
+                                        ++s;
+                                indent += fprintf(f, "%.*s ", (int)(s - b), b);
                                 if (*s)
                                         ++s;
-                                ++indent;
                         } while (*s && indent <= 80);
                         if (!*s)
                                 break;
