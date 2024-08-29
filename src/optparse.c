@@ -162,7 +162,7 @@ enum OptParseErr opt_parse_static(
         void *OPT_PARSE_RESTRICT l,
         int argc,
         char *argv[static argc + 1],
-        void *OPT_PARSE_RESTRICT user)
+        void *user)
 {
         struct OptSpec spec = { 0 }, *p;
         struct option *longopts = l;
@@ -199,7 +199,7 @@ enum OptParseErr opt_parse(
         struct OptSpec spec[OPT_PARSE_ARRAY OPT_PARSE_RESTRICT n],
         int argc,
         char *argv[OPT_PARSE_ARRAY argc + 1],
-        void *OPT_PARSE_RESTRICT user)
+        void *user)
 {
         char *optstr = NULL;
         struct option *longs = NULL;

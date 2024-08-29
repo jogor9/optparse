@@ -17,9 +17,7 @@
 
 #define OPT_PARSE_NONOPT_VALUE 1
 
-typedef int OptProc(int val,
-                    char *OPT_PARSE_RESTRICT arg,
-                    void *OPT_PARSE_RESTRICT user);
+typedef int OptProc(int val, char *arg, void *user);
 
 enum OptParseArg {
         OPT_PARSE_ARG_NONE,
@@ -60,7 +58,7 @@ enum OptParseErr opt_parse_static(
         void *OPT_PARSE_RESTRICT longopts,
         int argc,
         char *argv[OPT_PARSE_ARRAY argc + 1],
-        void *OPT_PARSE_RESTRICT user);
+        void *user);
 
 enum OptParseErr opt_parse(
         enum OptParseOrder order,
@@ -68,7 +66,7 @@ enum OptParseErr opt_parse(
         struct OptSpec opts_spec[OPT_PARSE_ARRAY OPT_PARSE_RESTRICT n],
         int argc,
         char *argv[OPT_PARSE_ARRAY argc + 1],
-        void *OPT_PARSE_RESTRICT user);
+        void *user);
 void opt_parse_print_help(
         FILE *f,
         size_t specs_sz,
